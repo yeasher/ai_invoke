@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI聊天助手</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --text-light: #ffffff;
+            --text-dark: #1e293b;
+            --bg-light: #f8fafc;
+            --bg-dark: #0f172a;
+            --message-user: #6366f1;
+            --message-bot: #f1f5f9;
+            --border-color: #e2e8f0;
+            --error-color: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+
+        .chat-header {
+            background: var(--primary-color);
+            color: var(--text-light);
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .chat-header i {
+            font-size: 1.5rem;
+        }
+
+        .chat-header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message-container {
+            display: flex;
+            gap: 12px;
+            max-width: 85%;
+        }
+
+        .user-container {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .bot-container {
+            align-self: flex-start;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background: var(--primary-light);
+            color: var(--text-light);
+        }
+
+        .bot-avatar {
+            background: var(--primary-dark);
+            color: var(--text-light);
+        }
+
+        .message {
+            padding: 14px 20px;
+            border-radius: 18px;
+            font-size: 1rem;
+            line-height: 1.6;
+            position: relative;
+            max-width: 100%;
+        }
+
+        .user-message {
+            background: var(--message-user);
+            color: var(--text-light);
+            border-top-right-radius: 4px;
+        }
+
+        .bot-message {
+            background: var(--message-bot);
+            color: var(--text-dark);
+            border-top-left-radius: 4px;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: var(--error-color);
+            border: 1px solid #fecaca;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .user-message .message-time {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .bot-message .message-time {
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        .chat-input-container {
+            padding: 16px 24px;
+            background: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 10;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+            background: var(--bg-light);
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .send-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            background: var(--primary-color);
+            color: var(--text-light);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .send-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        .send-button i {
+            font-size: 1.2rem;
+        }
+
+        .debug-panel {
+            padding: 12px 24px;
+            background: #f3f4f6;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            color: #4b5563;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .debug-title {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .debug-content {
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-connected {
+            background-color: #10b981;
+        }
+
+        .status-disconnected {
+            background-color: #ef4444;
+        }
+
+        .status-connecting {
+            background-color: #f59e0b;
+        }
+
+        /* 滚动条样式 */
+        .chat-messages::-webkit-scrollbar,
+        .debug-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track,
+        .debug-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb,
+        .debug-panel::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover,
+        .debug-panel::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* 打字机效果 */
+        .typing {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 18px;
+            background: var(--message-bot);
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: typing-animation 1.4s infinite both;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing-animation {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 消息进入动画 */
+        @keyframes message-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-container {
+            animation: message-in 0.3s ease-out forwards;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 90vh;
+                border-radius: 12px;
+            }
+
+            .message-container {
+                max-width: 90%;
+            }
+
+            .chat-header h1 {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .chat-container {
+                height: 92vh;
+                border-radius: 8px;
+            }
+
+            .message {
+                padding: 12px 16px;
+            }
+
+            .avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+            }
+
+            .chat-input {
+                padding: 12px 16px;
+            }
+
+            .send-button {
+                width: 45px;
+                height: 45px;
+            }
+
+            .chat-header {
+                padding: 14px 20px;
+            }
+
+            .chat-messages {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+        <i class="fas fa-robot"></i>
+        <h1>AI聊天助手</h1>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+        <div class="message-container bot-container">
+            <div class="avatar bot-avatar">
+                <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-content">
+                <div class="message bot-message">
+                    您好！我是AI助手，很高兴为您服务。请问有什么我可以帮助您的吗？
+                </div>
+                <div class="message-time">
+                    刚刚
+                </div>
+            </div>
+        </div>
+
+        <div class="message-container bot-container">
+            <div class="avatar bot-avatar">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="message-content">
+                <div class="message bot-message">
+                    检测到您之前无法获取响应数据，我已修复了SSE连接问题并添加了调试面板。
+                </div>
+                <div class="message-time">
+                    刚刚
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input-container">
+        <input type="text" class="chat-input" id="user-input" placeholder="输入您的问题..." autofocus>
+        <button class="send-button" id="send-button">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </div>
+
+    <div class="debug-panel" id="debug-panel">
+        <div class="debug-title">
+            <span class="status-indicator status-disconnected" id="status-indicator"></span>
+            <span>调试信息</span>
+            <button id="clear-debug" style="margin-left: auto; background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 0.8rem;">
+                <i class="fas fa-trash-alt"></i> 清除日志
+            </button>
+        </div>
+        <div class="debug-content" id="debug-content">
+            等待连接...
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const debugPanel = document.getElementById('debug-content');
+        const statusIndicator = document.getElementById('status-indicator');
+        const clearDebugBtn = document.getElementById('clear-debug');
+
+        let eventSource = null;
+        let isStreaming = false;
+
+        // 添加调试信息
+        function addDebugInfo(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugPanel.innerHTML += `[${timestamp}] ${message}\n`;
+            debugPanel.scrollTop = debugPanel.scrollHeight;
+        }
+
+        // 更新状态指示器
+        function updateStatus(status) {
+            statusIndicator.className = 'status-indicator';
+            if (status === 'connected') {
+                statusIndicator.classList.add('status-connected');
+            } else if (status === 'connecting') {
+                statusIndicator.classList.add('status-connecting');
+            } else {
+                statusIndicator.classList.add('status-disconnected');
+            }
+        }
+
+        // 清除调试日志
+        clearDebugBtn.addEventListener('click', function() {
+            debugPanel.textContent = '';
+            addDebugInfo('日志已清除');
+        });
+
+        // 获取当前时间
+        function getCurrentTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            return `${hours}:${minutes}`;
+        }
+
+        // 添加用户消息
+        function addUserMessage(message, time) {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container user-container';
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'avatar user-avatar';
+            avatarDiv.innerHTML = '<i class="fas fa-user"></i>';
+
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.className = 'message-content';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user-message';
+            messageDiv.textContent = message;
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = time;
+
+            messageContentDiv.appendChild(messageDiv);
+            messageContentDiv.appendChild(timeDiv);
+
+            messageContainer.appendChild(avatarDiv);
+            messageContainer.appendChild(messageContentDiv);
+
+            chatMessages.appendChild(messageContainer);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 添加机器人消息
+        function addBotMessage(message, time, isError = false) {
+            const messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container bot-container';
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'avatar bot-avatar';
+            avatarDiv.innerHTML = '<i class="fas fa-robot"></i>';
+
+            const messageContentDiv = document.createElement('div');
+            messageContentDiv.className = 'message-content';
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isError ? 'message error-message' : 'message bot-message';
+            messageDiv.textContent = message;
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = time;
+
+            messageContentDiv.appendChild(messageDiv);
+            messageContentDiv.appendChild(timeDiv);
+
+            messageContainer.appendChild(avatarDiv);
+            messageContainer.appendChild(messageContentDiv);
+
+            chatMessages.appendChild(messageContainer);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 发送消息函数
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            if (isStreaming) {
+                addDebugInfo("当前已有请求在处理中，请等待完成");
+                return;
+            }
+
+            isStreaming = true;
+
+            // 添加用户消息到聊天区域
+            const time = getCurrentTime();
+            addUserMessage(message, time);
+            addDebugInfo(`发送请求: ${message}`);
+
+            // 清空输入框
+            userInput.value = '';
+            userInput.disabled = true;
+            sendButton.disabled = true;
+
+            // 添加机器人正在输入的指示
+            const typingContainer = document.createElement('div');
+            typingContainer.className = 'message-container bot-container';
+            typingContainer.id = 'bot-typing';
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'avatar bot-avatar';
+            avatarDiv.innerHTML = '<i class="fas fa-robot"></i>';
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing';
+            typingDiv.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+
+            typingContainer.appendChild(avatarDiv);
+            typingContainer.appendChild(typingDiv);
+            chatMessages.appendChild(typingContainer);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // 更改按钮为暂停
+            sendButton.innerHTML = '<i class="fas fa-pause"></i>';
+            sendButton.onclick = stopStream;
+            sendButton.disabled = false;
+
+            // 创建EventSource连接
+            const url = `http://127.0.0.1:22062/ai/invoke/deepSeek/chat/stream?prompt=${encodeURIComponent(message)}`;
+            addDebugInfo(`建立SSE连接: ${url}`);
+            updateStatus('connecting');
+
+            eventSource = new EventSource(url);
+            let botResponse = '';
+            let responseContainer = null;
+
+            eventSource.addEventListener('open', function() {
+                addDebugInfo("SSE连接已建立");
+                updateStatus('connected');
+                userInput.disabled = false;
+            });
+
+            eventSource.onmessage = function(event) {
+                addDebugInfo(`收到数据: ${event.data}`);
+
+                // 如果这是第一条消息，创建回复容器
+                if (!responseContainer) {
+                    // 移除打字指示器
+                    const typingIndicator = document.getElementById('bot-typing');
+                    if (typingIndicator) {
+                        typingIndicator.remove();
+                    }
+
+                    // 创建回复容器
+                    responseContainer = document.createElement('div');
+                    responseContainer.className = 'message-container bot-container';
+                    responseContainer.id = 'current-bot-response';
+
+                    const avatarDiv = document.createElement('div');
+                    avatarDiv.className = 'avatar bot-avatar';
+                    avatarDiv.innerHTML = '<i class="fas fa-robot"></i>';
+
+                    const messageContentDiv = document.createElement('div');
+                    messageContentDiv.className = 'message-content';
+
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message bot-message';
+                    messageDiv.id = 'current-bot-message';
+
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = 'message-time';
+                    timeDiv.id = 'current-bot-time';
+                    timeDiv.textContent = getCurrentTime();
+
+                    messageContentDiv.appendChild(messageDiv);
+                    messageContentDiv.appendChild(timeDiv);
+
+                    responseContainer.appendChild(avatarDiv);
+                    responseContainer.appendChild(messageContentDiv);
+
+                    chatMessages.appendChild(responseContainer);
+                }
+
+                // 更新回复内容
+                botResponse += event.data;
+                const messageDiv = document.getElementById('current-bot-message');
+                if (messageDiv) {
+                    messageDiv.textContent = botResponse;
+                }
+
+                // 自动滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+
+            eventSource.onerror = function(error) {
+                addDebugInfo(`SSE错误: ${JSON.stringify(error)}`);
+                updateStatus('disconnected');
+
+                // 移除打字指示器
+                const typingIndicator = document.getElementById('bot-typing');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+
+                // 显示错误信息
+                if (!responseContainer) {
+                    addBotMessage("无法获取AI响应，请检查连接或稍后重试", getCurrentTime(), true);
+                }
+
+                completeResponse();
+            };
+        }
+
+        // 停止流式响应
+        function stopStream() {
+            if (eventSource) {
+                addDebugInfo("手动停止流式响应");
+                eventSource.close();
+                completeResponse();
+            }
+        }
+
+        // 完成响应处理
+        function completeResponse() {
+            addDebugInfo("响应完成");
+
+            // 关闭连接
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+
+            updateStatus('disconnected');
+
+            // 移除id，以便下次使用
+            const currentBotResponse = document.getElementById('current-bot-response');
+            if (currentBotResponse) {
+                currentBotResponse.removeAttribute('id');
+            }
+
+            const currentBotMessage = document.getElementById('current-bot-message');
+            if (currentBotMessage) {
+                currentBotMessage.removeAttribute('id');
+            }
+
+            const currentBotTime = document.getElementById('current-bot-time');
+            if (currentBotTime) {
+                currentBotTime.removeAttribute('id');
+            }
+
+            // 恢复发送按钮
+            sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            sendButton.onclick = sendMessage;
+            sendButton.disabled = false;
+            userInput.disabled = false;
+            userInput.focus();
+
+            isStreaming = false;
+        }
+
+        // 设置事件监听器
+        sendButton.addEventListener('click', sendMessage);
+
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !isStreaming) {
+                sendMessage();
+            }
+        });
+
+        // 初始化调试面板
+        addDebugInfo("页面加载完成");
+        updateStatus('disconnected');
+
+        // 自动聚焦到输入框
+        userInput.focus();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: shine-aiInvoke
+  profiles:
+    active: local
+
+server:
+  port: 22062
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+      enabled: true
+
+logging:
+  config: classpath:logback-custom.xml
+
+ai:
+  deepSeek:
+    api:
+      key: sk-9a225c13382644a0ac2b67bb2b7c7e0c
