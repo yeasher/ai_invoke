@@ -6,6 +6,9 @@
     <title>AI聊天助手 - 流式响应版</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+
     <style>
         :root {
             --primary-color: #6366f1;
@@ -446,9 +449,10 @@
             display: flex;
             gap: 10px;
             margin-top: 8px;
-            justify-content: flex-end;
+            justify-content: flex-start; /* 左对齐 */
             opacity: 0.7;
             transition: opacity 0.3s;
+            width: 100%;
         }
 
         .message-container:hover .message-actions {
@@ -482,7 +486,6 @@
             background: rgba(241, 245, 249, 0.7);
             border-radius: 12px;
             margin-top: 5px;
-            align-self: flex-start;
             max-width: 100%;
         }
 
@@ -501,8 +504,20 @@
         .api-status-container {
             width: 100%;
             display: flex;
+            justify-content: flex-start;
+            padding: 5px 0;
+        }
+
+        .api-status-center-container {
+            width: 100%;
+            display: flex;
             justify-content: center;
             padding: 5px 0;
+        }
+
+        /* 添加复制成功状态样式 */
+        .message-action.success {
+            color: var(--success-color) !important;
         }
 
         @media (max-width: 768px) {
@@ -596,7 +611,7 @@
 
                     请尝试提出任何问题，体验实时流式响应效果！
                 </div>
-                <div class="api-status-container">
+                <div class="api-status-center-container">
                     <div class="api-status-center">
                         当前API端点: 你的小红书助手
                     </div>
@@ -696,9 +711,6 @@
 
         // 添加机器人消息
         function addBotMessage(time) {
-            // 添加全局居中时间
-            addTimeCenter(time);
-
             const messageId = 'bot-message-' + Date.now();
 
             const messageContainer = document.createElement('div');
@@ -730,11 +742,10 @@
             actionsDiv.className = 'message-actions';
             actionsDiv.innerHTML = `
                 <button class="message-action" onclick="copyMessage('${messageId}')"><i class="fas fa-copy"></i> 复制</button>
-                <button class="message-action" onclick="stopStream()"><i class="fas fa-stop"></i> 停止生成</button>
             `;
             messageContentDiv.appendChild(actionsDiv);
 
-            // 添加API状态容器
+            // 修改API状态容器结构
             const apiStatusContainer = document.createElement('div');
             apiStatusContainer.className = 'api-status-container';
 
@@ -791,15 +802,28 @@
             // 设置Markdown解析选项：保留换行符
             marked.setOptions({
                 breaks: true,
-                gfm: true
+                gfm: true,
+                highlight: function(code, lang) {
+                    return hljs.highlightAuto(code).value;
+                }
             });
 
             // 使用Markdown解析器美化
-            const formattedContent = marked.parse(rawContent);
+            try {
+                const formattedContent = marked.parse(rawContent);
+                // 设置美化后的内容
+                messageDiv.innerHTML = formattedContent;
+                messageDiv.classList.add('formatted-message');
 
-            // 设置美化后的内容
-            messageDiv.innerHTML = formattedContent;
-            messageDiv.classList.add('formatted-message');
+                // 添加代码高亮
+                document.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            } catch (e) {
+                console.error('Markdown解析错误:', e);
+                // 如果解析失败，保持原始内容
+                messageDiv.textContent = rawContent;
+            }
         }
 
         // 停止流式响应
@@ -882,6 +906,13 @@
                 if (event.data === "[DONE]") {
                     // 完成响应
                     updateApiStatus(currentBotMessageId, '响应已完成');
+
+                    // 确保内容是最新的
+                    const messageDiv = document.getElementById(currentBotMessageId);
+                    if (messageDiv) {
+                        responseContent = messageDiv.textContent;
+                    }
+
                     beautifyMessageContent(currentBotMessageId);
                     stopStream();
                     return;
@@ -905,9 +936,38 @@
         window.copyMessage = function(messageId) {
             const messageDiv = document.getElementById(messageId);
             if (messageDiv) {
-                const text = messageDiv.textContent;
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('消息已复制到剪贴板');
+                // 获取要复制的文本内容
+                let textToCopy = messageDiv.textContent || messageDiv.innerText;
+
+                // 如果是格式化后的消息，可能需要特殊处理
+                if (messageDiv.classList.contains('formatted-message')) {
+                    // 创建一个临时div来获取纯文本
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = messageDiv.innerHTML;
+                    textToCopy = tempDiv.textContent || tempDiv.innerText;
+                }
+
+                // 去除多余的空格和换行
+                textToCopy = textToCopy.trim();
+
+                // 使用Clipboard API复制文本
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    // 显示复制成功的反馈
+                    const copyButton = document.querySelector(`button[onclick="copyMessage('${messageId}')"]`);
+                    if (copyButton) {
+                        const originalText = copyButton.innerHTML;
+                        copyButton.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                        copyButton.classList.add('success');
+
+                        // 2秒后恢复原状
+                        setTimeout(() => {
+                            copyButton.innerHTML = originalText;
+                            copyButton.classList.remove('success');
+                        }, 2000);
+                    }
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动选择文本后复制');
                 });
             }
         };
