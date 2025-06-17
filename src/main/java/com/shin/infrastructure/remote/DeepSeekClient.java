@@ -47,7 +47,7 @@ public class DeepSeekClient {
             "Naturally integrate relevant trending hashtags. Adopt a warm, conversational tone as if chatting with close friends – avoid overly formal language or traditional ad vibes. Enhance appeal with strategic emoji use \uD83D\uDE0D and expressive phrasing (e.g., \"OMG!\", \"Seriously game-changing!\").\n" +
             "\n" +
             "Ultimate goal: Spark target audience interest, create lasting impact, and motivate action (e.g., clicks, purchases, trials).";
-    private final String promptCn = "你是一位深谙小红书平台调性的内容创作专家。请根据用户需求，创作一篇符合小红书风格的内容。内容需聚焦产品/体验的核心价值和独特亮点，采用真实、生活化且极具种草力的表达方式（如个人体验故事、场景化痛点解决、干货分享、情感共鸣等）。确保内容具备高互动性（可引发评论、点赞、收藏），结构清晰（包含吸睛标题/开头、主体内容、互动引导），并自然融入相关热门话题标签。语言风格需亲切自然，如同闺蜜分享，避免过度书面化和硬广感，鼓励使用emoji、感叹词增强感染力。最终内容需能有效激发目标用户兴趣和行动欲望，并留下深刻印象。最主要的是，使用中文回答。";
+    private final String promptCn = "你是一位深谙小红书平台调性的内容创作专家。请根据用户需求，创作一篇符合小红书风格的内容。内容需聚焦产品/体验的核心价值和独特亮点，采用真实、生活化且极具种草力的表达方式（如个人体验故事、场景化痛点解决、干货分享、情感共鸣等）。确保内容具备高互动性（可引发评论、点赞、收藏），结构清晰（包含吸睛标题/开头、主体内容、互动引导），并自然融入相关热门话题标签。语言风格需亲切自然，如同闺蜜分享，避免过度书面化和硬广感，鼓励使用emoji、感叹词增强感染力。最终内容需能有效激发目标用户兴趣和行动欲望，并留下深刻印象。最主要的是，使用中文回答并按照markdown格式返回。";
 
     public String getResponse(String apiKey, String questionStr) throws IOException {
         List<DeepSeekMessage> messages = new ArrayList<>();
@@ -94,7 +94,7 @@ public class DeepSeekClient {
         // 身份
         DeepSeekMessage messageSystem = DeepSeekMessage.builder()
                 .role("system")
-                .content(promptEn).build();
+                .content(promptCn).build();
         // 问题
         DeepSeekMessage messageUser = DeepSeekMessage.builder()
                 .role("user")
@@ -107,7 +107,7 @@ public class DeepSeekClient {
                 .messages(messages)
                 .stream(true)
                 .build();
-
+        StringBuilder completeResponse = new StringBuilder();
         webClient.post()
                 .uri(API_URL)
                 .header("Authorization", "Bearer " + apiKey)
@@ -125,11 +125,15 @@ public class DeepSeekClient {
                         } else {
                             String json = chunk.replaceFirst("data: *", "");
                             String token = parseTokenFromJson(json);
+                            completeResponse.append(token);
                             emitter.send(SseEmitter.event().data(token));
                         }
                     } catch (Exception e) {
                         emitter.completeWithError(e);
                     }
+                })
+                .doOnComplete(() -> {
+                    System.out.println(completeResponse.toString());
                 })
                 .doOnError(emitter::completeWithError)
                 .subscribe();

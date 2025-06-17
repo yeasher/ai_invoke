@@ -776,8 +776,8 @@
                     typingIndicator.remove();
                 }
 
-                // 更新内容 - 保留换行符
-                messageDiv.textContent = content;
+                // 更新内容 - 使用innerHTML保留格式
+                messageDiv.innerHTML = content;
                 return true;
             }
             return false;
@@ -796,8 +796,9 @@
             const messageDiv = document.getElementById(messageId);
             if (!messageDiv) return;
 
-            // 获取原始文本内容
-            const rawContent = messageDiv.textContent;
+            // 获取原始文本内容 - 使用innerHTML保留格式
+            const rawContent = messageDiv.innerHTML;
+            document.write(rawContent);
 
             // 设置Markdown解析选项：保留换行符
             marked.setOptions({
@@ -810,7 +811,12 @@
 
             // 使用Markdown解析器美化
             try {
-                const formattedContent = marked.parse(rawContent);
+                // 先解码HTML实体
+                const decodedContent = new DOMParser().parseFromString(rawContent, 'text/html').body.textContent;
+                const formattedContent = marked.parse(decodedContent);
+
+                document.write(formattedContent);
+
                 // 设置美化后的内容
                 messageDiv.innerHTML = formattedContent;
                 messageDiv.classList.add('formatted-message');
@@ -822,7 +828,7 @@
             } catch (e) {
                 console.error('Markdown解析错误:', e);
                 // 如果解析失败，保持原始内容
-                messageDiv.textContent = rawContent;
+                messageDiv.innerHTML = rawContent;
             }
         }
 
