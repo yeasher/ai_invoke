@@ -89,12 +89,19 @@ public class DeepSeekClient {
         }
     }
 
-    public void getResponseStream(String apiKey, String questionStr, SseEmitter emitter) {
+    public void getResponseStream1(String apiKey, String questionStr, SseEmitter emitter) {
+        this.getResponseStream(apiKey, questionStr, promptCn, emitter);
+    }
+
+    public void getResponseStreamBySetSystem(String apiKey, String questionStr, String system, SseEmitter emitter) {
+        this.getResponseStream(apiKey, questionStr, system, emitter);
+    }
+    private void getResponseStream(String apiKey, String questionStr, String system, SseEmitter emitter) {
         List<DeepSeekMessage> messages = new ArrayList<>();
         // 身份
         DeepSeekMessage messageSystem = DeepSeekMessage.builder()
                 .role("system")
-                .content(promptCn).build();
+                .content(system).build();
         // 问题
         DeepSeekMessage messageUser = DeepSeekMessage.builder()
                 .role("user")

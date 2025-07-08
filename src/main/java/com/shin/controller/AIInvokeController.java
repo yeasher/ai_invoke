@@ -40,7 +40,15 @@ public class AIInvokeController {
     public SseEmitter deepSeekChatStream(@RequestParam("prompt") String prompt, HttpServletResponse response) {
         response.setHeader("Access-Control-Allow-Origin", "*");//跨域问题
         SseEmitter sseEmitter = new SseEmitter();
-        deepSeekClient.getResponseStream(deepSeekApiKey, prompt, sseEmitter);
+        deepSeekClient.getResponseStream1(deepSeekApiKey, prompt, sseEmitter);
+        return sseEmitter;
+    }
+
+    @GetMapping(value = "/deepSeek/chat/stream2", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter deepSeekChatStream2(@RequestParam("prompt") String prompt, @RequestParam("rule") String rule, HttpServletResponse response) {
+        response.setHeader("Access-Control-Allow-Origin", "*");//跨域问题
+        SseEmitter sseEmitter = new SseEmitter();
+        deepSeekClient.getResponseStreamBySetSystem(deepSeekApiKey, prompt, rule, sseEmitter);
         return sseEmitter;
     }
 
