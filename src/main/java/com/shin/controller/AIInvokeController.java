@@ -1,7 +1,6 @@
 package com.shin.controller;
 
 import com.shin.infrastructure.remote.DeepSeekClient;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -15,7 +14,6 @@ import java.io.IOException;
  * @author shiner
  * @since 2025/6/13
  */
-@Slf4j
 @RestController
 @RequestMapping("/ai/invoke")
 public class AIInvokeController {

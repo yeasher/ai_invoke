@@ -9,6 +9,8 @@ import com.shin.infrastructure.entity.deepSeek.DeepSeekMessage;
 import com.shin.infrastructure.entity.deepSeek.DeepSeekRequest;
 import com.shin.infrastructure.entity.deepSeek.DeepSeekResponse;
 import okhttp3.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -26,6 +28,8 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 public class DeepSeekClient {
+
+    private static Logger log = LoggerFactory.getLogger(DeepSeekClient.class);
 
     @Autowired
     private WebClient webClient;
@@ -140,7 +144,7 @@ public class DeepSeekClient {
                     }
                 })
                 .doOnComplete(() -> {
-                    System.out.println(completeResponse.toString());
+                    log.info(completeResponse.toString());
                 })
                 .doOnError(emitter::completeWithError)
                 .subscribe();
